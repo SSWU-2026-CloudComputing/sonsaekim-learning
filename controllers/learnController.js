@@ -1,8 +1,8 @@
 exports.showLearnSelect = async (req, res) => {
-    const userId = req.headers['x-user-id'];
+const userId = req.session.user?.user_id;
     if (!userId) return res.redirect('/nouser');
 
-    const userName = req.headers['x-user-name'];
+    const userName = req.session.user?.user_name;
 
     res.render('learn/learn', { userName });
 };

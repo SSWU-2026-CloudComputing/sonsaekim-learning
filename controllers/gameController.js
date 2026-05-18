@@ -30,7 +30,7 @@ exports.gamePlay = (req, res) => {
 };
 
 exports.createGameRecord = async (req, res) => {
-  const userId = req.headers['x-user-id'] || 1; //테스트용
+  const userId = req.session.user?.user_id;
   const score = req.body.score;
 
   if (!userId) {
@@ -66,7 +66,7 @@ exports.getTop3 = async (req, res) => {
 };
 
 exports.getMyBestScore = async (req, res) => {
-  const userId = req.headers['x-user-id'] || 1; // 테스트용 
+  const userId = req.session.user?.user_id;
 
   if (!userId) {
     return res.status(401).json({ error: '로그인 필요' });

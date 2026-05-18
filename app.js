@@ -2,14 +2,45 @@ const express = require('express');
 require('dotenv').config();
 const db = require('./models');
 const path = require('path');
+const cookieParser = require('cookie-parser');
+const session = require('express-session');
+const RedisStore = require('connect-redis').default;
+const { createClient } = require('redis');
+
 const app = express();
 
 app.set('port', process.env.PORT || 3000);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+const redisClient = createClient({
+  socket: {
+    host: process.env.REDIS_HOST || 'redis',
+    port: process.env.REDIS_PORT || 6379
+  },
+});
+redisClient.connect().catch(console.error);
+
+app.use(cookieParser(process.env.SESSION_SECRET || 'mySecretKey'));
+app.use(
+  session({
+    store: new RedisStore({ client: redisClient }),
+    secret: process.env.SESSION_SECRET || 'mySecretKey',
+    resave: false,
+    saveUninitialized: false,
+    name: 'session-cookie',
+    cookie: {
+      httpOnly: true,
+      secure: false,
+      maxAge: 1000 * 60 * 60,
+    },
+  })
+);
+
 app.use('/', express.static(path.join(__dirname, 'public')));
+
 app.use((req, res, next) => {
-  res.locals.user = req.headers['x-user-id'] || 1; // 테스트용 1번 유저
+  res.locals.user = req.session.user || null;
   next();
 });
 
@@ -31,7 +62,6 @@ app.use('/game', gameRouter);
 const predictRouter = require('./routers/predictRouter');
 app.use('/api', predictRouter);
 
-// Health check
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 db.sequelize.sync()

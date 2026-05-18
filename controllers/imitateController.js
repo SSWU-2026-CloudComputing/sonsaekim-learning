@@ -37,7 +37,7 @@ exports.showImitateResult = (req, res) => {
 };
 
 exports.saveImitateResult = async (req, res) => {
-  const userId = req.headers['x-user-id'];
+  const userId = req.session.user?.user_id;
   const { imitateResults } = req.body;
 
   try {
