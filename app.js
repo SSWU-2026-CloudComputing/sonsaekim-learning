@@ -4,7 +4,7 @@ const db = require('./models');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
-const RedisStore = require('connect-redis').default;
+const { RedisStore } = require('connect-redis');
 const { createClient } = require('redis');
 
 const app = express();
@@ -16,12 +16,14 @@ app.use(express.urlencoded({ extended: true }));
 const redisClient = createClient({
   socket: {
     host: process.env.REDIS_HOST || 'redis',
-    port: process.env.REDIS_PORT || 6379
+    port: process.env.REDIS_PORT || 6379,
   },
 });
+
 redisClient.connect().catch(console.error);
 
 app.use(cookieParser(process.env.SESSION_SECRET || 'mySecretKey'));
+
 app.use(
   session({
     store: new RedisStore({ client: redisClient }),
@@ -61,13 +63,14 @@ app.use('/game', gameRouter);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
-db.sequelize.sync()
+db.sequelize
+  .sync()
   .then(() => {
     console.log('Learning DB 연결 완료');
     app.listen(app.get('port'), '0.0.0.0', () => {
       console.log(`Learning Service running on port ${app.get('port')}`);
     });
   })
-  .catch(err => {
+  .catch((err) => {
     console.error('DB 연결 실패:', err);
   });
