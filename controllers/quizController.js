@@ -6,7 +6,7 @@ exports.showQuizSelect = (req, res) => {
 
 exports.showQuiz = async (req, res) => {
   try {
-    const userId = req.session.user?.user_id;
+    const userId = req.headers['x-user-id'];
     const type = req.params.type;
 
     const quizList = await quizService.getQuizList(type, userId);
@@ -23,7 +23,7 @@ exports.showQuiz = async (req, res) => {
 };
 
 exports.saveQuizResults = async (req, res) => {
-  const userId = req.session.user?.user_id;
+  const userId = req.headers['x-user-id'];
   const { quizResults } = req.body;
 
   if (!userId) return res.status(401).json({ message: '로그인이 필요합니다.' });
@@ -43,7 +43,7 @@ exports.showResult = (req, res) => {
 
 exports.showWrongAnswers = async (req, res) => {
   const type = req.query.type;
-  const userId = req.session.user?.user_id;
+  const userId = req.headers['x-user-id'];
 
   if (type === 'collected') {
     if (!userId) return res.redirect('/login');
@@ -69,7 +69,7 @@ exports.showWrongAnswers = async (req, res) => {
 };
 
 exports.toggleBookmark = async (req, res) => {
-  const userId = req.session.user?.user_id;
+  const userId = req.headers['x-user-id'];
   const { sourceType, sourceId } = req.body;
 
   if (!userId) return res.status(401).json({ message: '로그인이 필요합니다.' });
