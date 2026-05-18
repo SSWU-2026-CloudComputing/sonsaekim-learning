@@ -59,9 +59,6 @@ app.use('/learn', learnRouter);
 const gameRouter = require('./routers/gameRouter');
 app.use('/game', gameRouter);
 
-const predictRouter = require('./routers/predictRouter');
-app.use('/api', predictRouter);
-
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 db.sequelize.sync()
