@@ -20,9 +20,8 @@ exports.getRandomImages = async () => {
 exports.getTop3Records = async () => {
   return await GameRecord.findAll({
     order: [['score', 'DESC']],
-    limit: 3,
-    include: [{ model: User, attributes: ['name'], required: true }]
-  });
+    limit: 3
+    });
 };
 
 exports.createRecord = async (userId, score) => {

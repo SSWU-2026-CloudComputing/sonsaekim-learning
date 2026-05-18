@@ -7,12 +7,7 @@ const BookmarkWord = sequelize.define('BookmarkWord', {
     },
     user_id: {
     type: DataTypes.BIGINT,
-    allowNull: false,
-    references: {
-        model: 'users',
-        key: 'user_id'
-    },
-    onDelete: 'CASCADE'
+    allowNull: false
     },
     word_id: {
     type: DataTypes.BIGINT,
@@ -30,7 +25,6 @@ const BookmarkWord = sequelize.define('BookmarkWord', {
 });
 
 BookmarkWord.associate = (models) => {
-    BookmarkWord.belongsTo(models.User, { foreignKey: 'user_id' });
     BookmarkWord.belongsTo(models.SignWord, { foreignKey: 'word_id' });
 };
 

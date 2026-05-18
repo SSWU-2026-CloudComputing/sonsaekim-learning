@@ -7,12 +7,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         user_id: {
         type: DataTypes.BIGINT,
-        allowNull: false,
-        references: {
-            model: 'users',
-            key: 'user_id'
-        },
-        onDelete: 'CASCADE'
+        allowNull: false
         },
         vc_id: {
         type: DataTypes.BIGINT,
@@ -29,7 +24,6 @@ module.exports = (sequelize, DataTypes) => {
     });
     
     BookmarkVc.associate = (models) => {
-        BookmarkVc.belongsTo(models.User, { foreignKey: 'user_id' });
         BookmarkVc.belongsTo(models.SignVc, { foreignKey: 'vc_id' });
     };
     

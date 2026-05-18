@@ -19,12 +19,5 @@ module.exports = (sequelize, DataTypes) => {
     timestamps: false
   });
 
-  GameRecord.associate = (models) => {
-    GameRecord.belongsTo(models.User, {
-      foreignKey: 'user_id',
-      targetKey: 'user_id'
-    });
-  };
-
   return GameRecord;
 };
