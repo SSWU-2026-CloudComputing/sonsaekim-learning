@@ -8,12 +8,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     user_id: {
         type: DataTypes.BIGINT,
-        allowNull: false,
-        references: {
-            model: 'users',
-            key: 'user_id'
-        },
-        onDelete: 'CASCADE'
+        allowNull: false
         },
     vc_id: {
         type: DataTypes.BIGINT,
@@ -44,11 +39,6 @@ module.exports = (sequelize, DataTypes) => {
     });
 
     VcWrong.associate = (models) => {
-        VcWrong.belongsTo(models.User, {
-        foreignKey: 'user_id',
-        targetKey: 'user_id'
-        });
-
         VcWrong.belongsTo(models.SignVc, {
         foreignKey: 'vc_id',
         targetKey: 'vc_id' 

@@ -8,12 +8,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         user_id: {
             type: DataTypes.BIGINT,
-            allowNull: false,
-            references: {
-                model: 'users',
-                key: 'user_id'
-            },
-            onDelete: 'CASCADE'
+            allowNull: false
         },
         word_id: {
             type: DataTypes.BIGINT,
@@ -44,11 +39,6 @@ module.exports = (sequelize, DataTypes) => {
         });
         
         WordWrong.associate = (models) => {
-            WordWrong.belongsTo(models.User, {
-            foreignKey: 'user_id',
-            targetKey: 'user_id'
-            });
-    
             WordWrong.belongsTo(models.SignWord, {
             foreignKey: 'word_id',
             targetKey: 'word_id'
