@@ -6,6 +6,8 @@ const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const { RedisStore } = require('connect-redis');
 const { createClient } = require('redis');
+const { connectRabbitMQ } = require('./src/events/publisher');
+const { setupQueues } = require('./src/events/setup');
 
 const app = express();
 
@@ -63,14 +65,17 @@ app.use('/game', gameRouter);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
-db.sequelize
-  .sync()
-  .then(() => {
+db.sequelize.sync()
+  .then(async () => {
     console.log('Learning DB 연결 완료');
+
+    await connectRabbitMQ();
+    await setupQueues();
+
     app.listen(app.get('port'), '0.0.0.0', () => {
       console.log(`Learning Service running on port ${app.get('port')}`);
     });
   })
-  .catch((err) => {
+  .catch(err => {
     console.error('DB 연결 실패:', err);
   });
