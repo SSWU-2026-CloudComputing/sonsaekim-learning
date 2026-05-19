@@ -1,4 +1,5 @@
 const { GameRecord, User, SignWord, SignVc, sequelize } = require('../models');
+const { publish } = require('../src/events/publisher');
 
 exports.getRandomImages = async () => {
   const wordSamples = await SignWord.findAll({
@@ -25,7 +26,16 @@ exports.getTop3Records = async () => {
 };
 
 exports.createRecord = async (userId, score) => {
-  return await GameRecord.create({ user_id: userId, score });
+  const record = await GameRecord.create({ user_id: userId, score });
+
+  await publish('GamePlayed', {
+      userId,
+      gameRecordId: record.game_record_id,
+      score,
+      playedAt: new Date().toISOString()
+  });
+
+  return record;
 };
 
 exports.getAllRecords = async () => {
