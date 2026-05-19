@@ -1,5 +1,7 @@
 let lives = 3;
 let score = 0;
+let isGameOver = false;
+let spawnIntervalId = null;
 
 const lifeBox = document.querySelector('.life-box');
 const fallingContainer = document.querySelector('.falling-container');
@@ -29,13 +31,18 @@ window.addEventListener('DOMContentLoaded', async () => {
         rankingList.appendChild(p);
       });
     }
-
   } catch (err) {
     console.error('초기 데이터 불러오기 실패', err);
   }
 });
 
 async function showGameOver(score) {
+  if (isGameOver) return;
+  isGameOver = true;
+
+  clearInterval(spawnIntervalId);
+  document.querySelectorAll('.falling-img').forEach(img => img.remove());
+
   document.getElementById('final-score').innerText = score;
   document.getElementById('gameOverModal').style.display = 'flex';
 
@@ -45,14 +52,14 @@ async function showGameOver(score) {
       headers: {
         'Content-Type': 'application/json'
       },
-      credentials: 'include',  
+      credentials: 'include',
       body: JSON.stringify({ score })
     });
 
     const result = await response.json();
     console.log('게임 기록 저장 완료됨', result);
   } catch (error) {
-    console.error('게임 기록 저장둥 에러 발생 ', error);
+    console.error('게임 기록 저장중 에러 발생 ', error);
   }
 }
 
@@ -61,27 +68,28 @@ function restartGame() {
 }
 
 function goToStart() {
-  window.location.href = '/game/start'; 
+  window.location.href = '/game/start';
 }
 
 inputBox.addEventListener('keydown', (e) => {
+  if (isGameOver) return;
+
   if (e.key === 'Enter') {
     submitBtn.click();
   }
 });
 
 submitBtn.addEventListener('click', () => {
+  if (isGameOver) return;
+
   const userInput = inputBox.value.trim();
   const fallingImgs = document.querySelectorAll('.falling-img');
-
-  let matched = false;
 
   fallingImgs.forEach(img => {
     if (img.dataset.value === userInput) {
       img.remove();
       score += 10;
       scoreDisplay.innerText = score;
-      matched = true;
     }
   });
 
@@ -89,6 +97,7 @@ submitBtn.addEventListener('click', () => {
 });
 
 function spawnImage() {
+  if (isGameOver) return;
   if (signDataList.length === 0) return;
 
   const randomIndex = Math.floor(Math.random() * signDataList.length);
@@ -107,6 +116,12 @@ function spawnImage() {
   fallingContainer.appendChild(img);
 
   const intervalId = setInterval(() => {
+    if (isGameOver) {
+      clearInterval(intervalId);
+      img.remove();
+      return;
+    }
+
     const imgRect = img.getBoundingClientRect();
     const inputRect = document.querySelector('.input-box').getBoundingClientRect();
 
@@ -114,6 +129,7 @@ function spawnImage() {
       img.remove();
       clearInterval(intervalId);
       loseLife();
+      return;
     }
 
     if (!document.body.contains(img)) {
@@ -122,10 +138,11 @@ function spawnImage() {
   }, 50);
 }
 
-
-
 function loseLife() {
+  if (isGameOver) return;
+
   lives--;
+
   if (lifeBox.children.length > 0) {
     lifeBox.removeChild(lifeBox.children[0]);
   }
@@ -135,7 +152,5 @@ function loseLife() {
   }
 }
 
-
-
 spawnImage();
-setInterval(spawnImage, 2000);
+spawnIntervalId = setInterval(spawnImage, 2000);
