@@ -31,14 +31,16 @@ exports.gamePlay = (req, res) => {
 
 exports.createGameRecord = async (req, res) => {
   const userId = req.session.user?.user_id;
+  const userName = req.session.user?.name;
   const score = req.body.score;
+
 
   if (!userId) {
     return res.status(401).json({ err: '로그인한 사용자만 기록을 남길 수 있습니다.' });
   }
 
   try {
-    const record = await gameService.createRecord(userId, score);
+    const record = await gameService.createRecord(userId, score, userName);
     res.status(201).json(record);
   } catch (err) {
     console.error(err);
@@ -67,6 +69,8 @@ exports.getTop3 = async (req, res) => {
 
 exports.getMyBestScore = async (req, res) => {
   const userId = req.session.user?.user_id;
+
+  console.log('userId:', userId);
 
   if (!userId) {
     return res.status(401).json({ error: '로그인 필요' });
