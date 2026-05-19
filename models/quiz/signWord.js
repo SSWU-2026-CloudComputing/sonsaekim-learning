@@ -24,10 +24,6 @@ SignWord.associate = (models) => {
     foreignKey: 'word_id',
     sourceKey: 'word_id'
     });
-    SignWord.hasMany(models.WordWrong, {
-        foreignKey: 'word_id',
-        sourceKey: 'word_id'
-    });
 };
 
 return SignWord;

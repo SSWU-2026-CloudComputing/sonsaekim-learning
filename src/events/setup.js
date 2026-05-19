@@ -8,8 +8,8 @@ async function setupQueues() {
     await channel.assertExchange(exchange, 'topic', { durable: true });
 
     const queues = [
-        { name: 'quiz.submitted.queue', routingKey: 'QuizSubmitted' },
-        { name: 'game.played.queue', routingKey: 'GamePlayed' },
+        { name: 'quiz.submitted', routingKey: 'quiz.submitted' },
+        { name: 'game.played', routingKey: 'game.played' },
     ];
 
     for (const q of queues) {
