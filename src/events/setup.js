@@ -10,7 +10,6 @@ async function setupQueues() {
     const queues = [
         { name: 'quiz.submitted.queue', routingKey: 'QuizSubmitted' },
         { name: 'game.played.queue', routingKey: 'GamePlayed' },
-        { name: 'inference.completed.queue', routingKey: 'InferenceCompleted' }, //없어서 추가했어용
     ];
 
     for (const q of queues) {
