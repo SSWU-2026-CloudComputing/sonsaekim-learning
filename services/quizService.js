@@ -1,5 +1,7 @@
 const { Quiz, SignWord, SignVc, BookmarkWord, BookmarkVc, VcWrong, WordWrong } = require('../models');
 const { Sequelize } = require('../models');
+const { publish } = require('../src/events/publisher');
+
 
 exports.getQuizList = async (type, userId) => {
     const { Op } = require('sequelize');
@@ -87,6 +89,11 @@ exports.saveQuizResults = async (userId, quizResults) => {
             }
         }
     }
+
+    await publish('QuizSubmitted', {
+        userId,
+        quizResults
+    });
 };
 
 exports.getWrongAnswers = async (userId) => {
@@ -223,4 +230,6 @@ exports.toggleBookmark = async (userId, sourceType, sourceId) => {
     } else {
         throw new Error('유효하지 않은 sourceType입니다.');
     }
+
+    
 };
