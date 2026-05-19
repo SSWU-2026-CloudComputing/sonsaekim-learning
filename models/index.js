@@ -17,9 +17,6 @@ db.BookmarkWord = require('./quiz/bookmarkWord')(sequelize, DataTypes);
 db.BookmarkVc = require('./quiz/bookmarkVc')(sequelize, DataTypes);
 db.SignWord = require('./quiz/signWord')(sequelize, DataTypes);
 db.SignVc = require('./quiz/signVc')(sequelize, DataTypes);
-db.VcWrong = require('./quiz/vcWrong')(sequelize, DataTypes);
-db.WordWrong = require('./quiz/wordWrong')(sequelize, DataTypes);
-db.GameRecord = require('./GameRecord')(sequelize, DataTypes);
 
 Object.keys(db).forEach(modelName => {
   if (db[modelName].associate) {
