@@ -1,7 +1,11 @@
+require('dotenv').config();
+
 const { Quiz, SignWord, SignVc, BookmarkWord, BookmarkVc } = require('../models');
 const { Sequelize } = require('sequelize');
 const axios = require('axios');
 const { publish } = require('../src/events/publisher');
+
+const PROGRESS_API_URL = process.env.PROGRESS_API_URL
 
 
 exports.getQuizList = async (type, userId) => {
