@@ -2,7 +2,6 @@ const express = require('express');
 require('dotenv').config();
 const db = require('./models');
 const path = require('path');
-const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const { RedisStore } = require('connect-redis');
 const { createClient } = require('redis');
@@ -17,27 +16,25 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const redisClient = createClient({
-  socket: {
-    host: process.env.REDIS_HOST || 'redis',
-    port: process.env.REDIS_PORT || 6379,
-  },
+  url: `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || 6379}`
 });
-
 redisClient.connect().catch(console.error);
-
-app.use(cookieParser(process.env.SESSION_SECRET));
 
 app.use(
   session({
-    store: new RedisStore({ client: redisClient }),
+    store: new RedisStore({
+      client: redisClient,
+      prefix: 'sess:',
+      ttl: 86400,
+    }),
     secret: process.env.SESSION_SECRET || 'mySecretKey',
     resave: false,
     saveUninitialized: false,
-    name: 'connect.sid',
     cookie: {
       httpOnly: true,
       secure: false,
-      maxAge: 1000 * 60 * 60,
+      sameSite: 'lax',
+      maxAge: 1000 * 60 * 60 * 24,
     },
   })
 );
