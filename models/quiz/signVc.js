@@ -24,11 +24,6 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'vc_id',
             sourceKey: 'vc_id'
         });
-    
-        SignVc.hasMany(models.VcWrong, {
-            foreignKey: 'vc_id',
-            sourceKey: 'vc_id'
-        });
     };
     
     
