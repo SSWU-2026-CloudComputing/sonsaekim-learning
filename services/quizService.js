@@ -2,11 +2,8 @@ require('dotenv').config();
 
 const { Quiz, SignWord, SignVc, BookmarkWord, BookmarkVc } = require('../models');
 const { Sequelize } = require('sequelize');
-const axios = require('axios');
 const { publish } = require('../src/events/publisher');
-
-const PROGRESS_API_URL = process.env.PROGRESS_API_URL
-
+const progressClient = require('../lib/progressClient');
 
 exports.getQuizList = async (type, userId) => {
     const { Op } = require('sequelize');
@@ -20,35 +17,30 @@ exports.getQuizList = async (type, userId) => {
         limit: 10,
     });
 
+    let bookmarkedIds = [];
+    if (userId) {
+        const sourceType = isPhoneme ? 'sign_vc' : 'sign_word';
+        const bookmarks = await progressClient.getBookmarks(userId, sourceType);
+        const idKey = isPhoneme ? 'vc_id' : 'word_id';
+        bookmarkedIds = Array.isArray(bookmarks) ? bookmarks.map(b => b[idKey]) : [];
+    }
+
     const enrichedQuizList = await Promise.all(
         quizList.map(async (quiz) => {
         let image = '';
-        let is_bookmarked = false;
 
         if (quiz.source_type === 'sign_word') {
             const word = await SignWord.findByPk(quiz.source_id);
             image = word?.image || '';
-                if (userId) {
-                    const bookmark = await BookmarkWord.findOne({
-                        where: { user_id: userId, word_id: quiz.source_id }
-                    });
-                    is_bookmarked = !!bookmark;
-                }
         } else if (quiz.source_type === 'sign_vc') {
             const vc = await SignVc.findByPk(quiz.source_id);
             image = vc?.image || '';
-                if (userId) {
-                    const bookmark = await BookmarkVc.findOne({
-                        where: { user_id: userId, vc_id: quiz.source_id }
-                    });
-                    is_bookmarked = !!bookmark;
-                }
         }
 
         return {
             ...quiz.toJSON(),
             image,
-                is_bookmarked
+            is_bookmarked: bookmarkedIds.includes(quiz.source_id),
         };
         })
     );
@@ -68,12 +60,10 @@ exports.saveQuizResults = async (userId, quizResults) => {
 exports.getWrongAnswers = async (userId) => {
     const totalCount = 10;
 
-    const wrongRes = await axios.get(`${PROGRESS_API_URL}/progress/wrong-answers`, {
-        params: { userId },
-    });
+    const wrongData = await progressClient.getWrongAnswers(userId);
 
-    const vcSourceIds = wrongRes.data.vcIds || [];
-    const wordSourceIds = wrongRes.data.wordIds || [];
+    const vcSourceIds = wrongData.vcIds || [];
+    const wordSourceIds = wrongData.wordIds || [];
 
     const mixedWrongIds = [
         ...vcSourceIds.map(id => ({ source_type: 'sign_vc', source_id: id })),
@@ -116,32 +106,32 @@ exports.getWrongAnswers = async (userId) => {
 
     const quizList = [...vcQuizList, ...wordQuizList].sort(() => Math.random() - 0.5);
 
+    let bookmarkedVcIds = [];
+    let bookmarkedWordIds = [];
+    if (userId) {
+        const [vcBookmarks, wordBookmarks] = await Promise.all([
+            progressClient.getBookmarks(userId, 'sign_vc'),
+            progressClient.getBookmarks(userId, 'sign_word'),
+        ]);
+        bookmarkedVcIds = Array.isArray(vcBookmarks) ? vcBookmarks.map(b => b.vc_id) : [];
+        bookmarkedWordIds = Array.isArray(wordBookmarks) ? wordBookmarks.map(b => b.word_id) : [];
+    }
+
     const enrichedQuizList = await Promise.all(
         quizList.map(async (quiz) => {
         let image = '';
-        let is_bookmarked = false;
 
         if (quiz.source_type === 'sign_word') {
             const word = await SignWord.findByPk(quiz.source_id);
             image = word?.image || '';
-
-            if (userId) {
-            const bookmark = await BookmarkWord.findOne({
-                where: { user_id: userId, word_id: quiz.source_id },
-            });
-            is_bookmarked = !!bookmark;
-            }
         } else if (quiz.source_type === 'sign_vc') {
             const vc = await SignVc.findByPk(quiz.source_id);
             image = vc?.image || '';
-
-            if (userId) {
-            const bookmark = await BookmarkVc.findOne({
-                where: { user_id: userId, vc_id: quiz.source_id },
-            });
-            is_bookmarked = !!bookmark;
-            }
         }
+
+        const is_bookmarked = quiz.source_type === 'sign_word'
+            ? bookmarkedWordIds.includes(quiz.source_id)
+            : bookmarkedVcIds.includes(quiz.source_id);
 
         return {
             ...quiz.toJSON(),
