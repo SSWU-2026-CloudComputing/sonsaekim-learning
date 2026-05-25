@@ -2,14 +2,6 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const imitateController = require('../controllers/imitateController');
-const multer = require('multer');
-
-const upload = multer({
-    dest: 'uploads/',
-});
-
-const upload = multer({ dest: 'uploads/' });
-
 const upload = multer({ dest: 'uploads/' });
 
 // 따라하기 선택 페이지
