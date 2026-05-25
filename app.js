@@ -57,6 +57,7 @@ app.use('/quiz', quizRouter);
 
 const imitateRouter = require('./routers/imitateRouter');
 app.use('/imitate', imitateRouter);
+app.use('/api', imitateRouter);
 
 const learnRouter = require('./routers/learnRouter');
 app.use('/learn', learnRouter);
