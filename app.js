@@ -8,6 +8,7 @@ const { RedisStore } = require('connect-redis');
 const { createClient } = require('redis');
 const { connectRabbitMQ } = require('./src/events/publisher');
 const { setupQueues } = require('./src/events/setup');
+const seed = require('./seed/seed');
 
 const app = express();
 
@@ -69,6 +70,7 @@ db.sequelize.sync()
   .then(async () => {
     console.log('Learning DB 연결 완료');
 
+    await seed();
     await connectRabbitMQ();
     await setupQueues();
 
