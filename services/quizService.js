@@ -1,226 +1,185 @@
-const { Quiz, SignWord, SignVc, BookmarkWord, BookmarkVc, VcWrong, WordWrong } = require('../models');
-const { Sequelize } = require('../models');
+require('dotenv').config();
+
+const { Quiz, SignWord, SignVc } = require('../models');
+const { Sequelize } = require('sequelize');
+const { publish } = require('../src/events/publisher');
+const progressClient = require('../lib/progressClient');
 
 exports.getQuizList = async (type, userId) => {
-    const { Op } = require('sequelize');
-    const isPhoneme = type === 'phoneme';
+  const isPhoneme = type === 'phoneme';
 
-    const quizList = await Quiz.findAll({
-        where: {
-            source_type: isPhoneme ? 'sign_vc' : 'sign_word',
-        },
-        order: Quiz.sequelize.random(),
-        limit: 10
-    });
+  const quizList = await Quiz.findAll({
+    where: {
+      source_type: isPhoneme ? 'sign_vc' : 'sign_word',
+    },
+    order: Quiz.sequelize.random(),
+    limit: 10,
+  });
 
-    const enrichedQuizList = await Promise.all(
-        quizList.map(async (quiz) => {
-            let image = '';
-            let is_bookmarked = false;
+  let bookmarkedIds = [];
 
-            if (quiz.source_type === 'sign_word') {
-                const word = await SignWord.findByPk(quiz.source_id);
-                image = word?.image || '';
-                if (userId) {
-                    const bookmark = await BookmarkWord.findOne({
-                        where: { user_id: userId, word_id: quiz.source_id }
-                    });
-                    is_bookmarked = !!bookmark;
-                }
-            } else if (quiz.source_type === 'sign_vc') {
-                const vc = await SignVc.findByPk(quiz.source_id);
-                image = vc?.image || '';
-                if (userId) {
-                    const bookmark = await BookmarkVc.findOne({
-                        where: { user_id: userId, vc_id: quiz.source_id }
-                    });
-                    is_bookmarked = !!bookmark;
-                }
-            }
+  if (userId) {
+    const progressSourceType = isPhoneme
+      ? 'sign_vc'
+      : 'sign_word';
 
-            return {
-                ...quiz.toJSON(),
-                image,
-                is_bookmarked
-            };
-        })
+    const bookmarks = await progressClient.getBookmarks(
+      userId,
+      progressSourceType
     );
 
-    return enrichedQuizList;
+    const idKey = isPhoneme ? 'vc_id' : 'word_id';
+
+    bookmarkedIds = Array.isArray(bookmarks)
+      ? bookmarks.map((b) => Number(b[idKey]))
+      : [];
+  }
+
+  const enrichedQuizList = await Promise.all(
+    quizList.map(async (quiz) => {
+      let image = '';
+
+      if (quiz.source_type === 'sign_word') {
+        const word = await SignWord.findByPk(quiz.source_id);
+        image = word?.image || '';
+      } else if (quiz.source_type === 'sign_vc') {
+        const vc = await SignVc.findByPk(quiz.source_id);
+        image = vc?.image || '';
+      }
+
+      return {
+        ...quiz.toJSON(),
+        image,
+        is_bookmarked: bookmarkedIds.includes(
+          Number(quiz.source_id)
+        ),
+      };
+    })
+  );
+
+  return enrichedQuizList;
 };
 
 exports.saveQuizResults = async (userId, quizResults) => {
-    for (const result of quizResults) {
-        const common = {
-            is_follow: result.is_follow ?? false,
-            is_relearned: result.is_relearned ?? false,
-            created_at: new Date()
-        };
+  await publish('quiz.submitted', {
+    userId,
+    quizResults,
+  });
 
-        if (result.source_type === 'sign_word') {
-            const where = { user_id: userId, word_id: result.source_id };
-            const existing = await WordWrong.findOne({ where });
-
-            if (existing) {
-                if (
-                    existing.is_relearned !== common.is_relearned ||
-                    existing.is_follow !== common.is_follow
-                ) {
-                    await WordWrong.update(common, { where });
-                }
-            } else {
-                await WordWrong.create({ user_id: userId, word_id: result.source_id, ...common });
-            }
-        } else if (result.source_type === 'sign_vc') {
-            const where = { user_id: userId, vc_id: result.source_id };
-            const existing = await VcWrong.findOne({ where });
-
-            if (existing) {
-                if (
-                    existing.is_relearned !== common.is_relearned ||
-                    existing.is_follow !== common.is_follow
-                ) {
-                    await VcWrong.update(common, { where });
-                }
-            } else {
-                await VcWrong.create({ user_id: userId, vc_id: result.source_id, ...common });
-            }
-        }
-    }
+  return true;
 };
 
 exports.getWrongAnswers = async (userId) => {
-    const totalCount = 10;
-    let vcCount = Math.floor(Math.random() * (totalCount + 1));
-    let wordCount = totalCount - vcCount;
+  const totalCount = 10;
 
-    let vcWrongs = await VcWrong.findAll({
-        where: { user_id: userId, is_relearned: false },
-        order: Sequelize.literal('RAND()'),
-        limit: vcCount
-    });
-    const vcSourceIds = vcWrongs.map(v => v.vc_id);
+  const wrongData = await progressClient.getWrongAnswers(userId);
 
-    let wordWrongs = await WordWrong.findAll({
-        where: { user_id: userId, is_relearned: false },
-        order: Sequelize.literal('RAND()'),
-        limit: wordCount
-    });
-    const wordSourceIds = wordWrongs.map(w => w.word_id);
+  const vcSourceIds = wrongData.vcIds || [];
+  const wordSourceIds = wrongData.wordIds || [];
 
-    if (vcSourceIds.length + wordSourceIds.length < totalCount) {
-        const remaining = totalCount - (vcSourceIds.length + wordSourceIds.length);
+  const mixedWrongIds = [
+    ...vcSourceIds.map((id) => ({
+      source_type: 'sign_vc',
+      source_id: id,
+    })),
+    ...wordSourceIds.map((id) => ({
+      source_type: 'sign_word',
+      source_id: id,
+    })),
+  ]
+    .sort(() => Math.random() - 0.5)
+    .slice(0, totalCount);
 
-        if (vcSourceIds.length < vcCount) {
-            const extraWords = await WordWrong.findAll({
-                where: {
-                    user_id: userId,
-                    is_relearned: false,
-                    word_wrong_id: { [Sequelize.Op.notIn]: wordWrongs.map(w => w.id) }
-                },
-                order: Sequelize.literal('RAND()'),
-                limit: remaining
-            });
-            wordWrongs = wordWrongs.concat(extraWords);
-            wordSourceIds.push(...extraWords.map(w => w.word_id));
-        } else {
-            const extraVcs = await VcWrong.findAll({
-                where: {
-                    user_id: userId,
-                    is_relearned: false,
-                    vc_wrong_id: { [Sequelize.Op.notIn]: vcWrongs.map(v => v.id) }
-                },
-                order: Sequelize.literal('RAND()'),
-                limit: remaining
-            });
-            vcWrongs = vcWrongs.concat(extraVcs);
-            vcSourceIds.push(...extraVcs.map(v => v.vc_id));
-        }
-    }
+  const selectedVcIds = mixedWrongIds
+    .filter((item) => item.source_type === 'sign_vc')
+    .map((item) => item.source_id);
 
-    const vcQuizList = await Quiz.findAll({
+  const selectedWordIds = mixedWrongIds
+    .filter((item) => item.source_type === 'sign_word')
+    .map((item) => item.source_id);
+
+  const vcQuizList = selectedVcIds.length
+    ? await Quiz.findAll({
         where: {
-            source_type: 'sign_vc',
-            source_id: {
-                [Sequelize.Op.in]: vcSourceIds
-            }
+          source_type: 'sign_vc',
+          source_id: {
+            [Sequelize.Op.in]: selectedVcIds,
+          },
         },
         order: Quiz.sequelize.random(),
-        limit: vcSourceIds.length
-    });
+      })
+    : [];
 
-    const wordQuizList = await Quiz.findAll({
+  const wordQuizList = selectedWordIds.length
+    ? await Quiz.findAll({
         where: {
-            source_type: 'sign_word',
-            source_id: {
-                [Sequelize.Op.in]: wordSourceIds
-            }
+          source_type: 'sign_word',
+          source_id: {
+            [Sequelize.Op.in]: selectedWordIds,
+          },
         },
         order: Quiz.sequelize.random(),
-        limit: wordSourceIds.length
-    });
+      })
+    : [];
 
-    let quizList = [...vcQuizList, ...wordQuizList].sort(() => Math.random() - 0.5);
+  const quizList = [...vcQuizList, ...wordQuizList].sort(
+    () => Math.random() - 0.5
+  );
 
-    const enrichedQuizList = await Promise.all(
-        quizList.map(async (quiz) => {
-            let image = '';
-            let is_bookmarked = false;
+  let bookmarkedVcIds = [];
+  let bookmarkedWordIds = [];
 
-            if (quiz.source_type === 'sign_word') {
-                const word = await SignWord.findByPk(quiz.source_id);
-                image = word?.image || '';
-                if (userId) {
-                    const bookmark = await BookmarkWord.findOne({
-                        where: { user_id: userId, word_id: quiz.source_id }
-                    });
-                    is_bookmarked = !!bookmark;
-                }
-            } else if (quiz.source_type === 'sign_vc') {
-                const vc = await SignVc.findByPk(quiz.source_id);
-                image = vc?.image || '';
-                if (userId) {
-                    const bookmark = await BookmarkVc.findOne({
-                        where: { user_id: userId, vc_id: quiz.source_id }
-                    });
-                    is_bookmarked = !!bookmark;
-                }
-            }
+  if (userId) {
+    const [vcBookmarks, wordBookmarks] = await Promise.all([
+      progressClient.getBookmarks(userId, 'sign_vc'),
+      progressClient.getBookmarks(userId, 'sign_word'),
+    ]);
 
+    bookmarkedVcIds = Array.isArray(vcBookmarks)
+      ? vcBookmarks.map((b) => Number(b.vc_id))
+      : [];
 
-            return {
-                ...quiz.toJSON(),
-                image,
-                is_bookmarked
-            };
-        })
-    );
+    bookmarkedWordIds = Array.isArray(wordBookmarks)
+      ? wordBookmarks.map((b) => Number(b.word_id))
+      : [];
+  }
 
-    return enrichedQuizList;
+  const enrichedQuizList = await Promise.all(
+    quizList.map(async (quiz) => {
+      let image = '';
+
+      if (quiz.source_type === 'sign_word') {
+        const word = await SignWord.findByPk(quiz.source_id);
+        image = word?.image || '';
+      } else if (quiz.source_type === 'sign_vc') {
+        const vc = await SignVc.findByPk(quiz.source_id);
+        image = vc?.image || '';
+      }
+
+      const is_bookmarked =
+        quiz.source_type === 'sign_word'
+          ? bookmarkedWordIds.includes(Number(quiz.source_id))
+          : bookmarkedVcIds.includes(Number(quiz.source_id));
+
+      return {
+        ...quiz.toJSON(),
+        image,
+        is_bookmarked,
+      };
+    })
+  );
+
+  return enrichedQuizList;
 };
 
-exports.toggleBookmark = async (userId, sourceType, sourceId) => {
-    if (sourceType === 'sign_word') {
-        const existing = await BookmarkWord.findOne({ where: { user_id: userId, word_id: sourceId } });
-
-        if (existing) {
-        await BookmarkWord.destroy({ where: { user_id: userId, word_id: sourceId } });
-        return 'removed';
-        } else {
-        await BookmarkWord.create({ user_id: userId, word_id: sourceId });
-        return 'added';
-        }
-    } else if (sourceType === 'sign_vc') {
-        const existing = await BookmarkVc.findOne({ where: { user_id: userId, vc_id: sourceId } });
-
-        if (existing) {
-        await BookmarkVc.destroy({ where: { user_id: userId, vc_id: sourceId } });
-        return 'removed';
-        } else {
-        await BookmarkVc.create({ user_id: userId, vc_id: sourceId });
-        return 'added';
-        }
-    } else {
-        throw new Error('유효하지 않은 sourceType입니다.');
-    }
+exports.toggleBookmark = async (
+  userId,
+  sourceType,
+  sourceId
+) => {
+  return await progressClient.toggleBookmark(
+    userId,
+    sourceType,
+    sourceId
+  );
 };

@@ -25,7 +25,7 @@ const redisClient = createClient({
 
 redisClient.connect().catch(console.error);
 
-app.use(cookieParser(process.env.SESSION_SECRET || 'mySecretKey'));
+app.use(cookieParser(process.env.SESSION_SECRET));
 
 app.use(
   session({
@@ -33,7 +33,7 @@ app.use(
     secret: process.env.SESSION_SECRET || 'mySecretKey',
     resave: false,
     saveUninitialized: false,
-    name: 'session-cookie',
+    name: 'connect.sid',
     cookie: {
       httpOnly: true,
       secure: false,

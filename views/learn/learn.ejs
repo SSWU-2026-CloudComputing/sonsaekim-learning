@@ -6,7 +6,7 @@
     <div class="learn-wrapper">
         <div id="label">
             <img src="/assets/hand.svg">
-            <p><%= userName %>님 오늘도 손으로 새기며 배워봐요!</p>
+            <p><%= user?.name || '사용자' %>님 오늘도 손으로 새기며 배워봐요!</p>
         </div>
 <div class="learn-box">
         <a href="/quiz/select" class="learn-btn">퀴즈풀기</a>
