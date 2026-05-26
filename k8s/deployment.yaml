@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: flask
-        image: docker.io/mminnn28/sswu_sonsaekim-flask:latest
+        image: docker.io/mminnn28/sswu_sonsaekim-flask:18
         imagePullPolicy: Always
         ports:
         - containerPort: 5000
