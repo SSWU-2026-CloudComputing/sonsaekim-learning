@@ -10,6 +10,8 @@ const upload = multer({
 
 const upload = multer({ dest: 'uploads/' });
 
+const upload = multer({ dest: 'uploads/' });
+
 // 따라하기 선택 페이지
 router.get('/select', imitateController.showImitateSelect);
 
