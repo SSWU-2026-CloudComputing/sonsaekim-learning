@@ -1,4 +1,5 @@
 # Flask 서버 배포 설정
+# test deploy
 apiVersion: apps/v1
 kind: Deployment
 metadata:
