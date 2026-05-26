@@ -25,13 +25,13 @@ pipeline {
 
         stage('Build Images') {
             steps {
-                sh "BUILD_NUMBER=${env.BUILD_NUMBER} docker compose build"
+                sh "docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} ."
             }
         }
 
         stage('Push Images') {
             steps {
-                sh "BUILD_NUMBER=${env.BUILD_NUMBER} docker compose push"
+                sh "docker push ${IMAGE_NAME}:${BUILD_NUMBER}"
             }
         }
 
