@@ -190,6 +190,9 @@ spec:
         ports:
         - containerPort: 5672
         - containerPort: 15672
+        env:
+        - name: RABBITMQ_NODE_PORT
+          value: "5672"
 
 ---
 # RabbitMQ 내부통신용 서비스
