@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { Quiz, SignWord, SignVc } = require('../models');
+const contentsController = require('../controllers/contentsController');
+
 
 router.get('/quiz/:sourceType/:sourceId', async (req, res) => {
   const { sourceType, sourceId } = req.params;
@@ -25,5 +27,10 @@ router.get('/quiz/:sourceType/:sourceId', async (req, res) => {
     res.status(500).json({ message: '서버 오류' });
   }
 });
+
+
+router.get('/vc/:id', contentsController.getSignVcById);
+
+router.get('/word/:id', contentsController.getSignWordById);
 
 module.exports = router;
