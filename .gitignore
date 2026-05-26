@@ -44,6 +44,7 @@ pids
 .svelte-kit/
 
 /lib/db.js
+k8s/secret.yaml
 
 node_modules/
 
