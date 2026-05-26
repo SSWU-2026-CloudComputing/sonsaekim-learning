@@ -7,6 +7,7 @@ const { RedisStore } = require('connect-redis');
 const { createClient } = require('redis');
 const { connectRabbitMQ } = require('./src/events/publisher');
 const { setupQueues } = require('./src/events/setup');
+const seed = require('./seed/seed');
 
 const app = express();
 
@@ -26,9 +27,10 @@ app.use(
       prefix: 'sess:',
       ttl: 86400,
     }),
-    secret: process.env.SESSION_SECRET || 'mySecretKey',
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    name: 'connect.sid',
     cookie: {
       httpOnly: true,
       secure: false,
@@ -53,6 +55,7 @@ app.use('/quiz', quizRouter);
 
 const imitateRouter = require('./routers/imitateRouter');
 app.use('/imitate', imitateRouter);
+app.use('/api', imitateRouter);
 
 const learnRouter = require('./routers/learnRouter');
 app.use('/learn', learnRouter);
@@ -69,6 +72,7 @@ db.sequelize.sync()
   .then(async () => {
     console.log('Learning DB 연결 완료');
 
+    await seed();
     await connectRabbitMQ();
     await setupQueues();
 

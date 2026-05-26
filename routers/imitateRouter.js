@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const imitateController = require('../controllers/imitateController');
-
 const upload = multer({ dest: 'uploads/' });
 
 // 따라하기 선택 페이지
@@ -19,5 +18,7 @@ router.get('/:type/result', imitateController.showImitateResult);
 
 // 따라하기 오답 확인 페이지
 router.get('/:type/wrong', imitateController.showImitateWrong);
+
+router.post('/predict', upload.single('image'), imitateController.handlePrediction);
 
 module.exports = router;

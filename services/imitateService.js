@@ -1,37 +1,62 @@
 const { SignVc, VcWrong, WordWrong } = require('../models');
 const { Op } = require('sequelize');
-const { runPythonPrediction } = require('../lib/pythonCaller');
+
+const fs = require('fs');
+const FormData = require('form-data');
+const axios = require('axios');
+const path = require('path');
+
+const AI_SERVICE_URL = process.env.AI_SERVICE_URL;
 
 async function getImitateList(type) {
   const imitateList = await SignVc.findAll({
     where: type === 'vowel'
-      ? { vc_id: { [Op.gt]: 14 } }
-      : { vc_id: { [Op.lte]: 14 } },
+        ? { vc_id: { [Op.gt]: 14 } }
+        : { vc_id: { [Op.lte]: 14 } },
+
     order: SignVc.sequelize.random(),
-    limit: 10
+    limit: 10,
   });
 
-  return imitateList.map(item => ({
+  return imitateList.map((item) => ({
     ...item.toJSON(),
     image: item.image || '',
-    source_type: 'sign_vc'
+    source_type: 'sign_vc',
   }));
 }
 
-function runPrediction(imagePath, correctClass) {
-  return new Promise((resolve, reject) => {
-    runPythonPrediction(imagePath, (err, predictedClass) => {
-      if (err || isNaN(predictedClass)) {
-        reject(new Error('예측 실패'));
-      } else {
-        resolve({ predictedClass, isCorrect: predictedClass === correctClass });
-      }
-    });
-  });
+async function runPrediction(imagePath, correctText, mode) {
+  const formData = new FormData();
+
+  formData.append(
+    'image',
+    fs.createReadStream(imagePath),
+    {
+      filename: path.basename(imagePath),
+      contentType: 'image/jpeg',
+    }
+  );
+
+  formData.append('correctText', correctText);
+  formData.append('mode', mode);
+
+  const response = await axios.post(
+    `${AI_SERVICE_URL}/predict`,
+    formData,
+    {
+      headers: formData.getHeaders(),
+    }
+  );
+
+  console.log('AI 응답:', response.data);
+
+  return response.data;
 }
 
 async function saveImitateResults(userId, imitateResults) {
-  if (!userId) throw new Error('로그인이 필요합니다.');
+  if (!userId) {
+    throw new Error('로그인이 필요합니다.');
+  }
 
   for (const result of imitateResults) {
     const common = {
@@ -43,17 +68,28 @@ async function saveImitateResults(userId, imitateResults) {
       option3: null,
       option4: null,
       answer: result.answer,
-      created_at: new Date()
+      created_at: new Date(),
     };
 
-    if (result.source_type === 'vowel' || result.source_type === 'consonant') {
-      const where = { user_id: userId, word_id: result.source_id };
+    if (
+      result.source_type === 'vowel' ||
+      result.source_type === 'consonant'
+    ) {
+      const where = {
+        user_id: userId,
+        word_id: result.source_id,
+      };
+
       const existing = await WordWrong.findOne({ where });
 
       if (existing) {
         await WordWrong.update(common, { where });
       } else {
-        await WordWrong.create({ user_id: userId, word_id: result.source_id, ...common });
+        await WordWrong.create({
+          user_id: userId,
+          word_id: result.source_id,
+          ...common,
+        });
       }
     }
   }
@@ -62,5 +98,5 @@ async function saveImitateResults(userId, imitateResults) {
 module.exports = {
   getImitateList,
   runPrediction,
-  saveImitateResults
+  saveImitateResults,
 };
