@@ -12,100 +12,54 @@ pipeline {
 
     stages {
         stage('Checkout') {
-            when {
-                anyOf {
-                    changeRequest() 
-                    branch 'main'
-                }
-            }
             steps {
                 checkout scm
             }
         }
 
         stage('Docker Login') {
-            when {
-                anyOf {
-                    changeRequest() 
-                    branch 'main'
-                }
-            }
             steps {
-                sh """
-                    echo "$DOCKER_LOGIN_PSW" | docker login -u "$DOCKER_LOGIN_USR" --password-stdin
-                """
+                sh 'echo "$DOCKER_LOGIN_PSW" | docker login -u "$DOCKER_LOGIN_USR" --password-stdin'
             }
         }
 
         stage('Build Images') {
-            when {
-                anyOf {
-                    changeRequest() 
-                    branch 'main'
-                }
-            }
             steps {
                 sh "BUILD_NUMBER=${env.BUILD_NUMBER} docker compose build"
             }
         }
 
         stage('Push Images') {
-            when {
-                anyOf {
-                    changeRequest() 
-                    branch 'main'
-                }
-            }
             steps {
                 sh "BUILD_NUMBER=${env.BUILD_NUMBER} docker compose push"
             }
         }
+
         stage('Inline Secret into Deployment') {
-            when {
-                anyOf {
-                    changeRequest() 
-                    branch 'main'
-                }
-            }
             steps {
                 withCredentials([file(credentialsId: 'k8s-secret-file', variable: 'SECRET_FILE')]) {
                     sh """
-                        echo 'Appending secret to deployment.yaml'
-
-                        echo "\\n---" >> k8s/deployment.yaml
-
-                        cat "$SECRET_FILE" >> k8s/deployment.yaml
+                        echo '\\n---' >> k8s/deployment.yaml
+                        cat "\$SECRET_FILE" >> k8s/deployment.yaml
                     """
                 }
             }
         }
+
         stage('Render Deployment') {
-            when {
-                anyOf {
-                    changeRequest()
-                    branch 'main'
-                }
-            }
             steps {
-                sh """
-                    sed -i "s#${IMAGE_NAME}:.*#${IMAGE_NAME}:${BUILD_NUMBER}#g" k8s/deployment.yaml
-                """
+                sh "sed -i 's#${IMAGE_NAME}:.*#${IMAGE_NAME}:${BUILD_NUMBER}#g' k8s/deployment.yaml"
             }
         }
 
         stage('Deploy to GKE') {
-            when {
-                branch 'main'
-            }
             steps {
                 step([
-                    $class: 'KubernetesEngineBuilder',
+                    \$class: 'KubernetesEngineBuilder',
                     projectId: env.PROJECT_ID,
                     clusterName: env.CLUSTER_NAME,
                     location: env.LOCATION,
-
                     manifestPattern: 'k8s/deployment.yaml',
-
                     credentialsId: env.CREDENTIALS_ID,
                     verifyDeployments: true
                 ])
@@ -118,6 +72,3 @@ pipeline {
         failure { echo "FAILED" }
     }
 }
-
-
-
