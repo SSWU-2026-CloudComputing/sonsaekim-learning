@@ -7,9 +7,12 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (!rankingList) return;
 
     rankingList.innerHTML = '';
+
     top3.forEach((record, i) => {
       const p = document.createElement('p');
-      p.textContent = `${i + 1}등 ${record.User.name} ···· ${record.score}점`;
+      const name = record.user_name || '익명';
+
+      p.textContent = `${i + 1}등 ${name} ···· ${record.score}점`;
       rankingList.appendChild(p);
     });
   } catch (err) {

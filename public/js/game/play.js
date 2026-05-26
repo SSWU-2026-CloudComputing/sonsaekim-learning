@@ -27,7 +27,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       rankingList.innerHTML = '';
       top3.forEach((record, i) => {
         const p = document.createElement('p');
-        p.textContent = `${i + 1}등 ${record.User.name} ···· ${record.score}점`;
+        p.textContent = `${i + 1}등 ${record.user_name} ···· ${record.score}점`;
         rankingList.appendChild(p);
       });
     }
