@@ -92,7 +92,7 @@ spec:
               key: SESSION_SECRET 
 
         - name: REDIS_HOST
-          value: "redis"
+          value: "redis-svc"
         - name: REDIS_PORT
           value: "6379"
 
