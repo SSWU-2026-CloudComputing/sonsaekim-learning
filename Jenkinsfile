@@ -2,11 +2,12 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_LOGIN = credentials('dockerhub-login')
-        CREDENTIALS_ID = '2b8ffc9d-989a-47d3-a15f-1d34486232b0'
-        PROJECT_ID = 'dulcet-clock-477102-m7'
-        CLUSTER_NAME = 'kube'
-        LOCATION = 'us-central1-a'
+        DOCKER_LOGIN = credentials('dockerhub-learning')
+        CREDENTIALS_ID = '850d941b-7a1b-479d-8e1d-6b0d40b89d68'
+        PROJECT_ID = 'sonsaekim-ai'
+        CLUSTER_NAME = 'k8s'
+        LOCATION = 'asia-northeast3-a'
+        IMAGE_NAME = 'mminnn28/sswu_sonsaekim-learning'
     }
 
     stages {
@@ -81,14 +82,13 @@ pipeline {
         stage('Render Deployment') {
             when {
                 anyOf {
-                    changeRequest() 
+                    changeRequest()
                     branch 'main'
                 }
             }
             steps {
                 sh """
-                    sed -i "s#sswu_sonsaekim-flask:.*#sswu_sonsaekim-flask:${BUILD_NUMBER}#g" k8s/deployment.yaml
-                    sed -i "s#sswu_sonsaekim-node:.*#sswu_sonsaekim-node:${BUILD_NUMBER}#g" k8s/deployment.yaml
+                    sed -i "s#${IMAGE_NAME}:.*#${IMAGE_NAME}:${BUILD_NUMBER}#g" k8s/deployment.yaml
                 """
             }
         }

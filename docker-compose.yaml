@@ -1,0 +1,4 @@
+services:
+  node:
+    build: .
+    image: mminnn28/sswu_sonsaekim-learning:${BUILD_NUMBER:-latest}
