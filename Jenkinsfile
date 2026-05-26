@@ -55,7 +55,7 @@ pipeline {
         stage('Deploy to GKE') {
             steps {
                 step([
-                    \$class: 'KubernetesEngineBuilder',
+                    $class: 'KubernetesEngineBuilder',
                     projectId: env.PROJECT_ID,
                     clusterName: env.CLUSTER_NAME,
                     location: env.LOCATION,
