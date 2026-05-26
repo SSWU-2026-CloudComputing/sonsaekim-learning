@@ -115,7 +115,6 @@ spec:
   type: LoadBalancer
   selector:
     app: node
-  sessionAffinity: ClientIP
   ports:
   - port: 80
     targetPort: 3000
