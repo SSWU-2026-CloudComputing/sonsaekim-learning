@@ -1,6 +1,6 @@
 <%- include('../layouts/header') %>
-<link rel="stylesheet" href="/css/learn/learnFrame.css">
-<link rel="stylesheet" href="/css/quiz/quiz.css">
+<link rel="stylesheet" href="/learning/css/learn/learnFrame.css">
+<link rel="stylesheet" href="/learning/css/quiz/quiz.css">
 
 <div class="learn-container">
     <div class="learn-wrapper">
@@ -39,11 +39,11 @@
     </div>
 </div>
 
-<script src="/js/quiz/bookmark.js"></script>
+<script src="/learning/js/quiz/bookmark.js"></script>
 <script>
     const quizList = <%- JSON.stringify(quizList) %>;
     window.isWrongQuiz = <%= typeof isWrongQuiz !== 'undefined' && isWrongQuiz ? 'true' : 'false' %>;
 </script>
-<script src="/js/quiz/renderQuiz.js"></script>
+<script src="/learning/js/quiz/renderQuiz.js"></script>
 
 <%- include('../layouts/footer') %>
