@@ -19,12 +19,5 @@ const SignWord = sequelize.define('SignWord', {
     timestamps: false
 });
 
-SignWord.associate = (models) => {
-    SignWord.hasMany(models.BookmarkWord, {
-    foreignKey: 'word_id',
-    sourceKey: 'word_id'
-    });
-};
-
 return SignWord;
 };
