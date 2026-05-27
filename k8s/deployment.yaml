@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: learning-service
-          image: docker.io/mminnn28/sonsaekim-learning:v1
+          image: docker.io/mminnn28/sonsaekim-learning:v2
           imagePullPolicy: Always
 
           ports:
