@@ -1,213 +1,28 @@
-# Flask 서버 배포 설정
-# test deploy
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: flask
-  labels:
-    app: flask
+  name: learning-service
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: flask
+      app: learning-service
   template:
     metadata:
       labels:
-        app: flask
+        app: learning-service
     spec:
       containers:
-      - name: flask
-        image: docker.io/mminnn28/sswu_sonsaekim-flask:18
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 5000
-        env:
-        - name: FLASK_ENV
-          value: "production"
+        - name: learning-service
+          image: docker.io/mminnn28/sonsaekim-learning:v2
+          imagePullPolicy: Always
 
----
-# Flask 서버 내부 접근용 서비스
-apiVersion: v1
-kind: Service
-metadata:
-  name: flask
-spec:
-  type: ClusterIP
-  selector:
-    app: flask
-  ports:
-  - port: 5000
-    targetPort: 5000
-    name: http
+          ports:
+            - containerPort: 3000
 
----
-# Node.js 서버 배포 설정
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: node
-  labels:
-    app: node
-spec:
-  replicas: 2 # 레플리카 2로 설정 (트래픽 분산)
-  selector:
-    matchLabels:
-      app: node
-  template:
-    metadata:
-      labels:
-        app: node
-    spec:
-      containers:
-      - name: node
-        image: docker.io/mminnn28/sswu_sonsaekim-learning:__VERSION__
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 3000
-        env:
-        - name: DB_USER
-          valueFrom:
-            secretKeyRef:
-              name: node-app-secret
-              key: DB_USER
-        - name: DB_PASS
-          valueFrom:
-            secretKeyRef:
-              name: node-app-secret
-              key: DB_PASS
-        - name: DB_NAME
-          valueFrom:
-            secretKeyRef:
-              name: node-app-secret
-              key: DB_NAME
-        - name: DB_HOST
-          valueFrom:
-            secretKeyRef:
-              name: node-app-secret
-              key: DB_HOST
-        - name: SESSION_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: node-app-secret
-              key: SESSION_SECRET 
+          envFrom:
+            - configMapRef:
+                name: learning-config
 
-        - name: REDIS_HOST
-          value: "redis-svc"
-        - name: REDIS_PORT
-          value: "6379"
-
-        - name: DB_PORT
-          value: "3306"
-
-        - name: FLASK_NAME
-          value: "flask"
-
-        - name: RABBITMQ_URL
-          value: "amqp://rabbitmq:5672"
-
----
-# Node.js 서버 외부 접근용 서비스
-apiVersion: v1
-kind: Service
-metadata:
-  name: node
-spec:
-  type: LoadBalancer
-  selector:
-    app: node
-  ports:
-  - port: 80
-    targetPort: 3000
-    name: http
----
-# Redis 배포 설정
-
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: redis
-  labels:
-    app: redis
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: redis
-  template:
-    metadata:
-      labels:
-        app: redis
-    spec:
-      containers:
-      - name: redis
-        image: redis:7
-        ports:
-        - containerPort: 6379
-        volumeMounts:
-        - mountPath: /data
-          name: redis-data
-      volumes:
-      - name: redis-data
-        emptyDir: {}
-  
----
-# Redis 내부통신용 서비스
-apiVersion: v1
-kind: Service
-metadata:
-  name: redis
-spec:
-  type: ClusterIP
-  selector:
-    app: redis
-  ports:
-  - port: 6379
-    targetPort: 6379
-    name: tcp
-
----
-# RabbitMQ 배포 설정
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: rabbitmq
-  labels:
-    app: rabbitmq
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: rabbitmq
-  template:
-    metadata:
-      labels:
-        app: rabbitmq
-    spec:
-      containers:
-      - name: rabbitmq
-        image: rabbitmq:3-management
-        ports:
-        - containerPort: 5672
-        - containerPort: 15672
-        env:
-        - name: RABBITMQ_NODE_PORT
-          value: "5672"
-
----
-# RabbitMQ 내부통신용 서비스
-apiVersion: v1
-kind: Service
-metadata:
-  name: rabbitmq
-spec:
-  type: ClusterIP
-  selector:
-    app: rabbitmq
-  ports:
-  - name: amqp
-    port: 5672
-    targetPort: 5672
-  - name: management
-    port: 15672
-    targetPort: 15672
+            - secretRef:
+                name: learning-secret
