@@ -19,13 +19,6 @@ module.exports = (sequelize, DataTypes) => {
         timestamps: false
     });
     
-    SignVc.associate = (models) => {
-        SignVc.hasMany(models.BookmarkVc, {
-            foreignKey: 'vc_id',
-            sourceKey: 'vc_id'
-        });
-    };
-    
     
     return SignVc;
     };
