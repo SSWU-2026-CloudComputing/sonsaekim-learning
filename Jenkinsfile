@@ -35,17 +35,6 @@ pipeline {
             }
         }
 
-        stage('Inline Secret into Deployment') {
-            steps {
-                withCredentials([file(credentialsId: 'k8s-secret-file', variable: 'SECRET_FILE')]) {
-                    sh """
-                        echo '\\n---' >> k8s/deployment.yaml
-                        cat "\$SECRET_FILE" >> k8s/deployment.yaml
-                    """
-                }
-            }
-        }
-
         stage('Render Deployment') {
             steps {
                 sh "sed -i 's#${IMAGE_NAME}:.*#${IMAGE_NAME}:${BUILD_NUMBER}#g' k8s/deployment.yaml"
