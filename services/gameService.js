@@ -4,7 +4,7 @@ const { SignWord, SignVc, sequelize } = require('../models');
 const axios = require('axios');
 const { publish } = require('../src/events/publisher');
 
-const PROGRESS_API_URL = process.env.PROGRESS_API_URL;
+const PROGRESS_SERVICE_URL = process.env.PROGRESS_SERVICE_URL;
 
 exports.getRandomImages = async () => {
   const words = await SignWord.findAll({
@@ -32,7 +32,7 @@ exports.getRandomImages = async () => {
 };
 
 exports.getTop3Records = async () => {
-  const res = await axios.get(`${PROGRESS_API_URL}/progress/ranking/top3`);
+  const res = await axios.get(`${PROGRESS_SERVICE_URL}/progress/ranking/top3`);
   return res.data;
 };
 
@@ -48,7 +48,7 @@ exports.createRecord = async (userId, score, userName) => {
 };
 
 exports.getUserTopScore = async (userId) => {
-  const res = await axios.get(`${PROGRESS_API_URL}/progress/score/best`, {
+  const res = await axios.get(`${PROGRESS_SERVICE_URL}/progress/score/best`, {
     params: { userId },
   });
 
