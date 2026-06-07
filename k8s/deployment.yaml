@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: learning-service
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: learning-service
@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: learning-service
-          image: docker.io/mminnn28/sonsaekim-learning:v2
+          image: docker.io/mminnn28/sswu_sonsaekim-learning:__VERSION__
           imagePullPolicy: Always
 
           ports:
@@ -26,3 +26,16 @@ spec:
 
             - secretRef:
                 name: learning-secret
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 20
